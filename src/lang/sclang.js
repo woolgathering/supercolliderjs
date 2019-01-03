@@ -478,7 +478,7 @@ export default class SCLang extends EventEmitter {
       this.write('SuperColliderJS.newCode("' + guid + '");', null, true); // start a new String
 
       // iterate through the chunks and concatenate in sclang
-      for (var i=0; i < escapedLength; i++) {
+      for (var i=0; i < escapedChunks.length; i++) {
         this.write('SuperColliderJS.addCode("' + guid + '", "' + escapedChunks[i] + '");', null, true); // add to the string
       };
 
