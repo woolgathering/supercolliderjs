@@ -95,9 +95,9 @@ SuperColliderJS {
 		"SUPERCOLLIDERJS.interpreted".postln;
 	}
 
-	*newCode {arg guid;
+	*newCode {arg guid, escapedCode;
 		codeToBeCompiled = ();
-		codeToBeCompiled.string = ""; // set a new empty String
+		codeToBeCompiled.string = escapedCode; // set a new empty String
 		codeToBeCompiled.guid = guid; // keep track of the guid
 		^""
 	}

@@ -475,11 +475,15 @@ export default class SCLang extends EventEmitter {
       var escapedChunks = escaped.match(/.{1,8000}/g); // break the code into chunks of 8000 characters
 
       this.stateWatcher.registerCall(guid, { resolve, reject });
-      this.write('SuperColliderJS.newCode("' + guid + '");', null, true); // start a new String
+      // this.write('SuperColliderJS.newCode("' + guid + '");', null, true); // start a new String
 
       // iterate through the chunks and concatenate in sclang
       for (var i=0; i < escapedChunks.length; i++) {
-        this.write('SuperColliderJS.addCode("' + guid + '", "' + escapedChunks[i] + '");', null, true); // add to the string
+        if (i==0) {
+          this.write('SuperColliderJS.newCode("' + guid + '", "' + escapedChunks[i] + '");', null, true); // add to the string
+        } else {
+          this.write('SuperColliderJS.addCode("' + guid + '", "' + escapedChunks[i] + '");', null, true); // add to the string
+        };
       };
 
       // execute the code that has been concatenated as a String in sclang
