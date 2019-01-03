@@ -1,7 +1,7 @@
 
 SuperColliderJS {
 
-	classvar tab, nl, jsonEncoders, errorEncoders, <>sclangConf;
+	classvar tab, nl, jsonEncoders, errorEncoders, <>sclangConf, codeToBeCompiled;
 
 	*interpret { arg guid,
 		escapedCode,
@@ -94,6 +94,78 @@ SuperColliderJS {
 		thisProcess.nowExecutingPath = saveExecutingPath;
 		"SUPERCOLLIDERJS.interpreted".postln;
 	}
+
+	*newCode {arg guid;
+		codeToBeCompiled = ();
+		codeToBeCompiled.string = ""; // set a new empty String
+		codeToBeCompiled.guid = guid; // keep track of the guid
+		^""
+	}
+
+	*addCode {arg guid, escapedCode;
+		if((guid==codeToBeCompiled.guid).not) {
+			// throw an error
+		};
+
+		codeToBeCompiled.string = codeToBeCompiled.string ++ escapedCode; // add to it
+		^""
+	}
+
+	*executeCodeToBeCompiled {arg guid,
+		executingPath,
+		returnResultAsString=true,
+		reportError=true,
+		getBacktrace=false;
+
+		var code,
+			compiled,
+			result,
+			error,
+			saveExecutingPath = thisProcess.nowExecutingPath;
+
+		if((guid==codeToBeCompiled.guid).not) {
+			// throw an error
+		};
+
+		codeToBeCompiled.string = codeToBeCompiled.string.replace("__NL__", Char.nl.as(String));
+		codeToBeCompiled.string = codeToBeCompiled.string.replace("__SLASH__", ($\\).as(String));
+
+		thisProcess.nowExecutingPath = executingPath;
+
+		File.open("/tmp/scjsExecute", "w").write(codeToBeCompiled.string).close;
+
+		// capture compile errors, stdout
+		"\nSUPERCOLLIDERJS:%:CAPTURE:START\n".format(guid).postln;
+		compiled = codeToBeCompiled.string.compile;
+
+		if(compiled.isNil, {
+			"\nSUPERCOLLIDERJS:%:CAPTURE:END".format(guid).postln;
+			this.return(guid, "SyntaxError", nil);
+		}, {
+			{
+				result = compiled.value();
+			}.try({ arg err;
+				err.path = executingPath ? guid;
+				error = this.encodeError(err, getBacktrace, compiled);
+
+				// classic mode
+				if(reportError.asBoolean, {
+					err.reportError;
+				});
+			});
+			"\nSUPERCOLLIDERJS:%:CAPTURE:END".format(guid).postln;
+			if(error.notNil, {
+				this.return(guid, "Error", error);
+			}, {
+				this.return(guid, "Result", if(returnResultAsString ? true, { result.asString }, { result }));
+			});
+		});
+
+		thisProcess.nowExecutingPath = saveExecutingPath;
+		"SUPERCOLLIDERJS.interpreted".postln;
+		^""
+	}
+
 	/****************** JSON encoding *****************************************/
 
 	*encodeError { arg err, getBacktrace=false, compiledFunc;
