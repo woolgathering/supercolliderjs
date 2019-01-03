@@ -450,6 +450,43 @@ export default class SCLang extends EventEmitter {
     });
   }
 
+  interpretCollect(
+    code: string,
+    nowExecutingPath: ?string,
+    asString: boolean,
+    postErrors: boolean,
+    getBacktrace: boolean
+  ): Promise<SclangResultType> {
+    return new Promise((resolve, reject) => {
+      var escaped = code
+        .replace(/[\n\r]/g, '__NL__')
+        .replace(/\\/g, '__SLASH__')
+        .replace(/\"/g, '\\"');
+      var guid = cuid();
+
+      var executeArgs = [
+        '"' + guid + '"',
+        nowExecutingPath ? '"' + nowExecutingPath + '"' : 'nil',
+        asString ? 'true' : 'false',
+        postErrors ? 'true' : 'false',
+        getBacktrace ? 'true' : 'false'
+      ].join(',');
+
+      var escapedChunks = escaped.match(/.{1,8000}/g); // break the code into chunks of 8000 characters
+
+      this.stateWatcher.registerCall(guid, { resolve, reject });
+      this.write('SuperColliderJS.newCode("' + guid + '");', null, true); // start a new String
+
+      // iterate through the chunks and concatenate in sclang
+      for (var i=0; i < escapedLength; i++) {
+        this.write('SuperColliderJS.addCode("' + guid + '", "' + escapedChunks[i] + '");', null, true); // add to the string
+      };
+
+      // execute the code that has been concatenated as a String in sclang
+      this.write('SuperColliderJS.executeCodeToBeCompiled(' + executeArgs + ');', null, true); // tell sclang to compile the String
+    });
+  }
+
   /**
    * executeFile
    */
